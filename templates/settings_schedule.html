@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>수집 주기 - Threat Feed Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% include "_header.html" %}
+
+<div id="message" class="message hidden"></div>
+
+<section class="panel">
+  <h2>수집 주기 (cron)</h2>
+  <div class="settings-row">
+    <span id="scheduleStatus" class="status-line"></span>
+  </div>
+  <div class="settings-row">
+    <select id="scheduleSelect">
+      <option value="*/5 * * * *">5분마다</option>
+      <option value="*/10 * * * *">10분마다</option>
+      <option value="*/15 * * * *">15분마다</option>
+      <option value="*/30 * * * *">30분마다</option>
+      <option value="0 * * * *" selected>1시간마다</option>
+      <option value="0 */3 * * *">3시간마다</option>
+      <option value="0 */6 * * *">6시간마다</option>
+      <option value="0 */12 * * *">12시간마다</option>
+      <option value="0 0 * * *">매일 자정</option>
+      <option value="custom">직접 입력 (cron 표현식)</option>
+    </select>
+    <input type="text" id="scheduleCustomInput" placeholder="예: */20 * * * *" class="hidden">
+    <button id="scheduleSaveBtn" class="btn-primary">저장</button>
+    <button id="scheduleClearBtn" class="btn-secondary">사용 안함</button>
+  </div>
+</section>
+
+<script src="{{ url_for('static', filename='common.js') }}"></script>
+<script src="{{ url_for('static', filename='settings-schedule.js') }}"></script>
+</body>
+</html>

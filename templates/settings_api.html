@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API 설정 - Threat Feed Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% include "_header.html" %}
+
+<div id="message" class="message hidden"></div>
+
+<section class="panel">
+  <h2>VirusTotal 설정</h2>
+  <div class="settings-row">
+    <span id="vtStatus" class="status-line"></span>
+  </div>
+  <div class="settings-row">
+    <input type="password" id="vtApiKeyInput" placeholder="VirusTotal API Key 입력">
+    <button id="vtSaveBtn" class="btn-primary">저장</button>
+  </div>
+
+  <h2>FortiGuard 설정</h2>
+  <div class="settings-row">
+    <span id="fgStatus" class="status-line"></span>
+  </div>
+  <div class="settings-row">
+    <input type="password" id="fgApiKeyInput" placeholder="FortiGuard API Token 입력">
+    <button id="fgSaveBtn" class="btn-primary">저장</button>
+  </div>
+</section>
+
+<script src="{{ url_for('static', filename='common.js') }}"></script>
+<script src="{{ url_for('static', filename='settings-api.js') }}"></script>
+</body>
+</html>

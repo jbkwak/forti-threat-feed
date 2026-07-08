@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>계정 설정 - Threat Feed Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% include "_header.html" %}
+
+<div id="message" class="message hidden"></div>
+
+<section class="panel">
+  <h2>계정 설정</h2>
+  <div class="settings-row">
+    <span id="accountStatus" class="status-line"></span>
+  </div>
+  <div class="settings-row">
+    <input type="password" id="currentPasswordInput" placeholder="현재 비밀번호">
+    <input type="password" id="newPasswordInput" placeholder="새 비밀번호 (8자 이상)">
+    <input type="password" id="confirmPasswordInput" placeholder="새 비밀번호 확인">
+    <button id="changePasswordBtn" class="btn-primary">비밀번호 변경</button>
+  </div>
+</section>
+
+<script src="{{ url_for('static', filename='common.js') }}"></script>
+<script src="{{ url_for('static', filename='settings-account.js') }}"></script>
+</body>
+</html>

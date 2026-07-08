@@ -101,6 +101,30 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/settings/account")
+@auth.login_required
+def settings_account():
+    return render_template("settings_account.html")
+
+
+@app.route("/settings/fortiproxy")
+@auth.login_required
+def settings_fortiproxy():
+    return render_template("settings_fortiproxy.html")
+
+
+@app.route("/settings/api")
+@auth.login_required
+def settings_api_page():
+    return render_template("settings_api.html")
+
+
+@app.route("/settings/schedule")
+@auth.login_required
+def settings_schedule_page():
+    return render_template("settings_schedule.html")
+
+
 @app.route("/api/urls")
 @auth.login_required
 def api_urls():
