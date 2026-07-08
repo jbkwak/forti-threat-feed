@@ -142,13 +142,17 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .message.warn { background: color-mix(in srgb, var(--warn) 15%, transparent); color: var(--warn); }
 .message.error { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--panel);
+.table-scroll {
+  overflow-x: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
-  overflow: hidden;
+}
+
+table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+  background: var(--panel);
   font-size: 13px;
 }
 
@@ -156,6 +160,7 @@ th, td {
   text-align: left;
   padding: 8px 10px;
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
 }
 
 th { color: var(--muted); font-weight: 600; font-size: 12px; }
@@ -188,12 +193,13 @@ th { color: var(--muted); font-weight: 600; font-size: 12px; }
 .vt-pending, .vt-unknown { background: var(--border); color: var(--muted); }
 .vt-error { background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); }
 
-.vt-cell { display: flex; align-items: center; gap: 6px; }
 .vt-cell button {
   background: var(--border);
   color: var(--text);
   padding: 3px 8px;
   font-size: 11px;
+  margin-left: 6px;
+  vertical-align: middle;
 }
 
 .pagination {
