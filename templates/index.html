@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Threat Feed Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-icon" width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M24 4 L40 10 V21 C40 32 33 40.5 24 44 C15 40.5 8 32 8 21 V10 Z"
+            fill="var(--accent)" fill-opacity="0.15" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="17" cy="31" r="2.1" fill="var(--warn)"/>
+      <path d="M17 31 A7 7 0 0 1 24.2 23.6" stroke="var(--warn)" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+      <path d="M17 31 A11.8 11.8 0 0 1 28.6 19.1" stroke="var(--warn)" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.6"/>
+    </svg>
+    <h1>Threat Feed Dashboard</h1>
+  </div>
+  <div class="topbar-actions">
+    <button id="settingsToggle" class="btn-secondary">설정</button>
+    <button id="logoutBtn" class="btn-secondary">로그아웃</button>
+  </div>
+</header>
+
+<section id="settingsPanel" class="panel hidden">
+  <h2>계정 설정</h2>
+  <div class="settings-row">
+    <span id="accountStatus" class="status-line"></span>
+  </div>
+  <div class="settings-row">
+    <input type="password" id="currentPasswordInput" placeholder="현재 비밀번호">
+    <input type="password" id="newPasswordInput" placeholder="새 비밀번호 (8자 이상)">
+    <input type="password" id="confirmPasswordInput" placeholder="새 비밀번호 확인">
+    <button id="changePasswordBtn" class="btn-primary">비밀번호 변경</button>
+  </div>
+
+  <h2>FortiProxy 설정</h2>
+  <div class="settings-row">
+    <span id="fortiStatus" class="status-line"></span>
+  </div>
+  <div class="settings-row">
+    <input type="text" id="fortiHostInput" placeholder="호스트 (예: 192.0.2.10)">
+    <input type="password" id="fortiApiKeyInput" placeholder="API Key (Bearer 토큰)">
+    <input type="text" id="fortiResourceNameInput" placeholder="External Resource 이름 (예: 3rd_feed)">
+    <button id="fortiSaveBtn" class="btn-primary">저장</button>
+  </div>
+
+  <h2>VirusTotal 설정</h2>
+  <div class="settings-row">
+    <span id="vtStatus" class="status-line"></span>
+  </div>
+  <div class="settings-row">
+    <input type="password" id="vtApiKeyInput" placeholder="VirusTotal API Key 입력">
+    <button id="vtSaveBtn" class="btn-primary">저장</button>
+  </div>
+
+  <h2>FortiGuard 설정</h2>
+  <div class="settings-row">
+    <span id="fgStatus" class="status-line"></span>
+  </div>
+  <div class="settings-row">
+    <input type="password" id="fgApiKeyInput" placeholder="FortiGuard API Token 입력">
+    <button id="fgSaveBtn" class="btn-primary">저장</button>
+  </div>
+
+  <h2>수집 주기 (cron)</h2>
+  <div class="settings-row">
+    <span id="scheduleStatus" class="status-line"></span>
+  </div>
+  <div class="settings-row">
+    <select id="scheduleSelect">
+      <option value="*/5 * * * *">5분마다</option>
+      <option value="*/10 * * * *">10분마다</option>
+      <option value="*/15 * * * *">15분마다</option>
+      <option value="*/30 * * * *">30분마다</option>
+      <option value="0 * * * *" selected>1시간마다</option>
+      <option value="0 */3 * * *">3시간마다</option>
+      <option value="0 */6 * * *">6시간마다</option>
+      <option value="0 */12 * * *">12시간마다</option>
+      <option value="0 0 * * *">매일 자정</option>
+      <option value="custom">직접 입력 (cron 표현식)</option>
+    </select>
+    <input type="text" id="scheduleCustomInput" placeholder="예: */20 * * * *" class="hidden">
+    <button id="scheduleSaveBtn" class="btn-primary">저장</button>
+    <button id="scheduleClearBtn" class="btn-secondary">사용 안함</button>
+  </div>
+</section>
+
+<section class="filters">
+  <label>날짜
+    <input type="date" id="filterDate" list="dateList">
+    <datalist id="dateList"></datalist>
+  </label>
+  <label>출처
+    <select id="filterSource">
+      <option value="">전체</option>
+      <option value="urlhaus">urlhaus</option>
+      <option value="openphish">openphish</option>
+    </select>
+  </label>
+  <label>검색
+    <input type="text" id="filterQuery" placeholder="URL 일부 검색">
+  </label>
+  <button id="searchBtn" class="btn-primary">검색</button>
+  <button id="resetBtn" class="btn-secondary">초기화</button>
+</section>
+
+<section class="actions">
+  <span id="selectedCount">0개 선택됨</span>
+  <button id="pushBtn" class="btn-primary" disabled>선택 항목 FortiProxy Push</button>
+  <button id="vtCheckBtn" class="btn-secondary" disabled>선택 항목 VT 확인 (최대 4개)</button>
+  <button id="fgCheckBtn" class="btn-secondary" disabled>선택 항목 FortiGuard 확인 (최대 10개)</button>
+</section>
+
+<div id="message" class="message hidden"></div>
+
+<table id="urlTable">
+  <thead>
+    <tr>
+      <th><input type="checkbox" id="selectAll"></th>
+      <th>URL</th>
+      <th>출처</th>
+      <th>수집 시각 (KST)</th>
+      <th>Push</th>
+      <th>VirusTotal</th>
+      <th>FortiGuard</th>
+    </tr>
+  </thead>
+  <tbody id="urlTableBody"></tbody>
+</table>
+
+<div class="pagination">
+  <button id="prevPage" class="btn-secondary">이전</button>
+  <span id="pageInfo"></span>
+  <button id="nextPage" class="btn-secondary">다음</button>
+</div>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

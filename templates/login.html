@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>로그인 - Threat Feed Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-body">
+<form class="panel login-box" method="post">
+  <div class="brand login-brand">
+    <svg class="brand-icon" width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M24 4 L40 10 V21 C40 32 33 40.5 24 44 C15 40.5 8 32 8 21 V10 Z"
+            fill="var(--accent)" fill-opacity="0.15" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="17" cy="31" r="2.1" fill="var(--warn)"/>
+      <path d="M17 31 A7 7 0 0 1 24.2 23.6" stroke="var(--warn)" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+      <path d="M17 31 A11.8 11.8 0 0 1 28.6 19.1" stroke="var(--warn)" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.6"/>
+    </svg>
+    <h1>Threat Feed Dashboard</h1>
+  </div>
+  {% if error %}<div class="message error">{{ error }}</div>{% endif %}
+  <input type="text" name="username" placeholder="아이디" autofocus required>
+  <input type="password" name="password" placeholder="비밀번호" required>
+  <button type="submit" class="btn-primary">로그인</button>
+</form>
+</body>
+</html>
