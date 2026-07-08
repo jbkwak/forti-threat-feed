@@ -291,4 +291,9 @@ def api_fortiguard_check():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=int(os.environ.get("WEBAPP_PORT", 5050)))
+    # 운영 환경에서 debug=True로 켜두면 Werkzeug 인터랙티브 디버거가 노출되어
+    # 원격 코드 실행으로 이어질 수 있음. 기본은 False, 필요할 때만 FLASK_DEBUG=true로 켤 것.
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    host = os.environ.get("WEBAPP_HOST", "127.0.0.1")
+    port = int(os.environ.get("WEBAPP_PORT", 5050))
+    app.run(host=host, port=port, debug=debug, threaded=True)
