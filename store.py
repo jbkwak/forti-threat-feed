@@ -78,15 +78,6 @@ def add_new_urls(conn, triples):
     return cur.rowcount
 
 
-def get_unpushed_urls(conn, limit: int):
-    """아직 FortiProxy에 반영 못한 URL 목록 (신규 + 이전 실행에서 실패한 것 포함)."""
-    rows = conn.execute(
-        "SELECT url FROM seen_urls WHERE pushed = 0 ORDER BY first_seen ASC LIMIT ?",
-        (limit,),
-    ).fetchall()
-    return [r[0] for r in rows]
-
-
 def mark_pushed(conn, urls):
     if not urls:
         return

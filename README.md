@@ -2,6 +2,7 @@
 
 무료 악성 URL 피드(URLhaus, OpenPhish)를 수집 → 중복 제거 후 로컬 SQLite에 저장 →
 웹 대시보드에서 날짜/출처로 검색하고, 필요한 URL만 선택해 FortiProxy External Resource(Threat Feed)로 push.
+cron은 수집만 자동으로 하고, **FortiProxy push는 대시보드에서 체크박스로 선택했을 때만** 나갑니다(자동 push 없음).
 VirusTotal API 키를 넣으면 선택한 URL의 매칭(탐지) 결과도 조회 가능.
 
 ## 구성 파일
@@ -9,7 +10,7 @@ VirusTotal API 키를 넣으면 선택한 URL의 매칭(탐지) 결과도 조회
 - `store.py` — SQLite 기반 중복 제거 / push 상태 / VT 결과 / 설정(웹 UI에서 입력한 값) 저장.
 - `forti.py` — FortiProxy REST(monitor) API 클라이언트.
 - `vt.py` — VirusTotal v3 API 클라이언트.
-- `main.py` — cron용 배치 실행 진입점 (수집 → 미반영분 자동 push).
+- `main.py` — cron용 배치 실행 진입점. **수집·저장만 하고 push는 하지 않음.**
 - `webapp.py` + `templates/`, `static/` — 검색/체크박스 선택 push/VT 확인용 웹 대시보드.
 - `auth.py` — 로그인 세션 인증 (Flask session, 비밀번호는 해시로 SQLite에 저장).
 
@@ -26,7 +27,7 @@ cd ~/forti-threat-feed
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env   # 최소한 cron 배치용 기본값 채우기 (웹 UI에서 덮어쓸 수도 있음)
+cp .env.example .env   # FortiProxy/VT/FortiGuard 값은 비워두고 웹 UI에서 입력해도 됨
 ```
 
 ## FortiProxy 사전 설정 (1회)
@@ -60,19 +61,14 @@ python webapp.py   # http://localhost:5050 (기본 포트, WEBAPP_PORT로 변경
 - **체크박스 선택 → FortiProxy Push**: 선택한 URL만 골라 위 API로 한 번에 반영. 성공한 항목은 `pushed`로 표시되어 중복 push 방지.
 - **VirusTotal 확인**: 설정 패널에 API 키를 넣으면 선택 URL(최대 4개, 무료 API 분당 제한 때문)의 탐지 결과 조회.
 - **FortiGuard 확인**: 설정 패널에 FortiGuard 프리미엄 API 토큰을 넣으면 선택 URL(최대 10개)의 카테고리 등급(rating) 조회 (`GET https://premiumapi.fortinet.com/v1/rate?url=...`).
-- **설정 패널**: FortiProxy host/API 토큰/리소스 이름, VirusTotal API 키, FortiGuard API 토큰을 화면에서 직접 입력·저장 가능 (SQLite에 저장되며 `.env`보다 우선 적용됨). cron 배치(`main.py`)만 쓸 경우엔 `.env`만 채워도 충분.
+- **설정 패널**: FortiProxy host/API 토큰/리소스 이름, VirusTotal API 키, FortiGuard API 토큰을 화면에서 직접 입력·저장 가능 (SQLite에 저장되며 `.env`보다 우선 적용됨). FortiProxy 값은 대시보드에서 push 버튼을 쓸 때만 필요 — `main.py`(cron)는 이 값들을 아예 쓰지 않음.
 - **수집 주기(cron) 설정**: 설정 패널에서 주기(프리셋 또는 직접 cron 표현식)를 선택해 저장하면, `python-crontab`으로 **현재 로그인 사용자의 시스템 crontab에 즉시 반영**됨 (`crontab -l`로 확인 가능, 주석 `# forti-threat-feed-collect`로 식별). 별도 재시작 없이 다음 분 단위 cron 체크부터 새 주기로 동작. "사용 안함"을 누르면 해당 항목만 제거됨(다른 crontab 항목에는 영향 없음).
 
-## cron 배치 테스트 (실제 push 없이 확인)
-```bash
-python main.py --dry-run
-```
-로그(`sync.log`)에서 수집 건수, 신규 건수, push 대상 목록을 확인하세요.
-
-## cron 배치 실제 실행
+## cron 배치 수동 실행 (테스트용)
 ```bash
 python main.py
 ```
+push는 하지 않으므로 몇 번을 실행해도 안전합니다. 로그(`sync.log`)에서 수집 건수, 신규 건수를 확인하세요.
 
 ## cron 등록
 웹 대시보드 설정 패널에서 주기를 선택해 저장하면 자동으로 등록됩니다 (위 "수집 주기(cron) 설정" 참고). 수동으로 등록하고 싶다면:
@@ -87,12 +83,11 @@ crontab -e
 ## 동작 방식 요약
 1. `feeds.py`가 URLhaus / OpenPhish에서 URL을 받아 정규화(스킴 제거)한 값과 원본(raw) 값을 함께 수집.
 2. `store.py`가 SQLite(`urls.db`)에 `INSERT OR IGNORE`로 저장 — 이미 본 URL은 자동으로 스킵됨 (기본 중복 제거).
-3. cron(`main.py`)은 아직 반영 안 된(`pushed=0`) URL을 자동으로, 웹 대시보드는 사용자가 체크박스로 고른 URL만 `forti.py`가 REST API로 한 번에 POST.
-4. 성공한 URL만 `pushed=1`로 표시. 실패한 URL은 cron 기준 다음 실행 때 자동 재시도.
-5. VT 조회 결과(`vt_status`, `vt_malicious`, `vt_total`)도 같은 DB에 캐시되어 대시보드에 배지로 표시됨.
+3. cron(`main.py`)은 여기까지만 하고 끝. push는 오직 웹 대시보드에서 사용자가 체크박스로 고른 URL만 `forti.py`가 REST API로 한 번에 POST.
+4. 성공한 URL만 `pushed=1`로 표시되어 같은 URL을 또 선택해 눌러도 중복 push는 되지만(REST API 자체는 멱등), 화면에서 "완료" 배지로 이미 반영된 걸 구분 가능.
+5. VT/FortiGuard 조회 결과도 같은 DB에 캐시되어 대시보드에 배지로 표시됨.
 
 ## 알아둘 점
-- FortiProxy External Resource 항목 수에도 모델별 제한이 있을 수 있습니다. `MAX_PUSH_PER_RUN`(cron)으로 회당 반영량을 조절하세요.
 - URLhaus/OpenPhish는 요청 빈도 제한이 있으니 cron 주기를 너무 짧게(예: 분 단위) 잡지 마세요. URLhaus는 5분, OpenPhish 무료 피드는 12시간마다만 갱신되므로 시간 단위 cron이면 충분합니다.
-- FortiProxy의 push 응답은 배치 단위 성공/실패만 알려주고 entry별 결과는 제공하지 않습니다 — 실패 시 배치 전체가 재시도 대상(`pushed=0` 유지)이 됩니다.
+- FortiProxy push는 대시보드에서 수동으로만 발생합니다. push 요청 중 네트워크 오류가 나도 `main.py`(cron)에는 영향이 없습니다(애초에 관여하지 않음).
 - VirusTotal 무료 API는 분당 4건 / 일 500건 제한이 있어 `MAX_VT_BATCH=4`, 호출 간 15초 간격으로 제한 처리되어 있습니다.
