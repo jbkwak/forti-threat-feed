@@ -62,7 +62,14 @@ def main():
             resource_name=forti["resource_name"],
             verify_ssl=forti["verify_ssl"],
         )
-        succeeded, failed = client.push_urls(to_push)
+        try:
+            succeeded, failed = client.push_urls(to_push)
+        except Exception as e:
+            # 네트워크 오류 등으로 여기서 예외가 나면 이번 실행에서 새로 수집한 URL 저장까지
+            # 롤백되므로(commit 전), 반드시 잡아서 로그만 남기고 정상 종료한다.
+            logger.error("FortiProxy push 요청 실패: %s", e)
+            return
+
         store.mark_pushed(conn, succeeded)
 
         logger.info("push 성공 %d건 / 실패 %d건", len(succeeded), len(failed))
