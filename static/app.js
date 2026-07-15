@@ -145,43 +145,55 @@ async function pushSelected() {
   }
 }
 
+function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
 async function runVtCheck(urls) {
   if (!urls.length) return;
-  if (urls.length > 4) {
-    showMessage("VirusTotal 무료 API 제한으로 한 번에 최대 4개까지만 확인됩니다. 앞 4개만 조회합니다.", "warn");
-    urls = urls.slice(0, 4);
-  }
-  showMessage(`VirusTotal 조회 중... (${urls.length}건, 최대 ${urls.length * 15}초 소요될 수 있음)`, "info");
+  const CHUNK_SIZE = 4; // VirusTotal 무료 API 분당 제한
+  const chunks = chunk(urls, CHUNK_SIZE);
+  let done = 0;
   try {
-    await fetchJSON("/api/vt-check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ urls }),
-    });
-    showMessage("VirusTotal 조회 완료", "success");
-    loadPage();
+    for (const batch of chunks) {
+      showMessage(`VirusTotal 조회 중... (${done}/${urls.length}건 완료)`, "info");
+      await fetchJSON("/api/vt-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls: batch }),
+      });
+      done += batch.length;
+      loadPage();
+    }
+    showMessage(`VirusTotal 조회 완료 (${done}건)`, "success");
   } catch (e) {
-    showMessage(e.message, "error");
+    showMessage(`VirusTotal 조회 중 오류 (${done}/${urls.length}건까지 완료): ${e.message}`, "error");
+    loadPage();
   }
 }
 
 async function runFgCheck(urls) {
   if (!urls.length) return;
-  if (urls.length > 10) {
-    showMessage("FortiGuard 조회는 한 번에 최대 10개까지만 가능합니다. 앞 10개만 조회합니다.", "warn");
-    urls = urls.slice(0, 10);
-  }
-  showMessage(`FortiGuard 조회 중... (${urls.length}건)`, "info");
+  const CHUNK_SIZE = 10; // FortiGuard 요청당 상한
+  const chunks = chunk(urls, CHUNK_SIZE);
+  let done = 0;
   try {
-    await fetchJSON("/api/fortiguard-check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ urls }),
-    });
-    showMessage("FortiGuard 조회 완료", "success");
-    loadPage();
+    for (const batch of chunks) {
+      showMessage(`FortiGuard 조회 중... (${done}/${urls.length}건 완료)`, "info");
+      await fetchJSON("/api/fortiguard-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls: batch }),
+      });
+      done += batch.length;
+      loadPage();
+    }
+    showMessage(`FortiGuard 조회 완료 (${done}건)`, "success");
   } catch (e) {
-    showMessage(e.message, "error");
+    showMessage(`FortiGuard 조회 중 오류 (${done}/${urls.length}건까지 완료): ${e.message}`, "error");
+    loadPage();
   }
 }
 
