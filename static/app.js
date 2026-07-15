@@ -25,12 +25,31 @@ function buildQuery() {
   const date = el("filterDate").value;
   const source = el("filterSource").value;
   const q = el("filterQuery").value.trim();
+  const fgCategory = el("filterFgCategory").value;
   if (date) params.set("date", date);
   if (source) params.set("source", source);
   if (q) params.set("q", q);
+  if (fgCategory) params.set("fg_category", fgCategory);
   params.set("page", state.page);
   params.set("page_size", state.pageSize);
   return params.toString();
+}
+
+async function loadFgCategories() {
+  try {
+    const data = await fetchJSON("/api/fg-categories");
+    const opts = ['<option value="">전체</option>'];
+    opts.push(`<option value="__unchecked__">미확인 (${data.unchecked}건)</option>`);
+    opts.push(`<option value="__not_found__">FortiGuard 미등록 (${data.not_found}건)</option>`);
+    data.categories.forEach((c) => {
+      opts.push(
+        `<option value="${escapeHtml(c.category)}">${escapeHtml(c.category)} (#${c.category_id}) · ${c.count}건</option>`
+      );
+    });
+    el("filterFgCategory").innerHTML = opts.join("");
+  } catch (e) {
+    /* 카테고리 목록은 부가 기능이므로 실패해도 무시 */
+  }
 }
 
 function vtBadge(row) {
@@ -203,6 +222,7 @@ function bindEvents() {
     el("filterDate").value = "";
     el("filterSource").value = "";
     el("filterQuery").value = "";
+    el("filterFgCategory").value = "";
     state.page = 1;
     loadPage();
   });
@@ -221,4 +241,5 @@ function bindEvents() {
 
 bindEvents();
 loadDates();
+loadFgCategories();
 loadPage();

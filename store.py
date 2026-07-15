@@ -95,8 +95,15 @@ COLUMNS = [
 ]
 
 
-def search_urls(conn, date=None, source=None, q=None, page=1, page_size=50):
-    """날짜(YYYY-MM-DD, KST 기준)/출처/검색어로 필터링. 반환값: (row dict 목록, 전체 건수)."""
+def search_urls(conn, date=None, source=None, q=None, fg_category=None, page=1, page_size=50):
+    """날짜(YYYY-MM-DD, KST 기준)/출처/검색어/FortiGuard 카테고리로 필터링.
+
+    fg_category는 실제 카테고리명(예: "Malicious Websites") 외에 특수값을 받는다:
+      "__unchecked__" - 아직 FortiGuard 조회를 안 한 URL (fg_status IS NULL)
+      "__not_found__" - FortiGuard에 등록되지 않은 URL (fg_status = 'not_found')
+
+    반환값: (row dict 목록, 전체 건수)
+    """
     where, params = [], []
     if date:
         # first_seen은 UTC로 저장되어 있으므로 KST(UTC+9) 기준 날짜로 변환해 비교
@@ -108,6 +115,13 @@ def search_urls(conn, date=None, source=None, q=None, page=1, page_size=50):
     if q:
         where.append("url LIKE ?")
         params.append(f"%{q}%")
+    if fg_category == "__unchecked__":
+        where.append("fg_status IS NULL")
+    elif fg_category == "__not_found__":
+        where.append("fg_status = 'not_found'")
+    elif fg_category:
+        where.append("fg_category = ?")
+        params.append(fg_category)
     where_sql = f"WHERE {' AND '.join(where)}" if where else ""
 
     total = conn.execute(f"SELECT COUNT(*) FROM seen_urls {where_sql}", params).fetchone()[0]
@@ -128,6 +142,23 @@ def list_dates(conn):
         "SELECT DISTINCT date(datetime(first_seen, '+9 hours')) AS d FROM seen_urls ORDER BY d DESC"
     ).fetchall()
     return [r[0] for r in rows]
+
+
+def list_fg_categories(conn):
+    """FortiGuard 조회 결과로 나온 카테고리 목록 + 건수 (건수 많은 순)."""
+    rows = conn.execute(
+        "SELECT fg_category, fg_category_id, COUNT(*) FROM seen_urls "
+        "WHERE fg_status = 'found' AND fg_category IS NOT NULL "
+        "GROUP BY fg_category, fg_category_id ORDER BY COUNT(*) DESC"
+    ).fetchall()
+    return [{"category": r[0], "category_id": r[1], "count": r[2]} for r in rows]
+
+
+def get_fg_status_counts(conn):
+    """FortiGuard 미확인/미등록 건수 (카테고리 드롭다운의 특수 옵션용)."""
+    unchecked = conn.execute("SELECT COUNT(*) FROM seen_urls WHERE fg_status IS NULL").fetchone()[0]
+    not_found = conn.execute("SELECT COUNT(*) FROM seen_urls WHERE fg_status = 'not_found'").fetchone()[0]
+    return {"unchecked": unchecked, "not_found": not_found}
 
 
 def raw_urls_for(conn, urls):

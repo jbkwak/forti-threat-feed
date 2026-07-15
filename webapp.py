@@ -131,11 +131,14 @@ def api_urls():
     date = request.args.get("date") or None
     source = request.args.get("source") or None
     q = request.args.get("q") or None
+    fg_category = request.args.get("fg_category") or None
     page = max(int(request.args.get("page", 1)), 1)
     page_size = min(max(int(request.args.get("page_size", 50)), 1), 200)
 
     with store.connect(DB_PATH) as conn:
-        rows, total = store.search_urls(conn, date=date, source=source, q=q, page=page, page_size=page_size)
+        rows, total = store.search_urls(
+            conn, date=date, source=source, q=q, fg_category=fg_category, page=page, page_size=page_size
+        )
 
     return jsonify({
         "rows": rows,
@@ -144,6 +147,15 @@ def api_urls():
         "page_size": page_size,
         "total_pages": max(math.ceil(total / page_size), 1),
     })
+
+
+@app.route("/api/fg-categories")
+@auth.login_required
+def api_fg_categories():
+    with store.connect(DB_PATH) as conn:
+        categories = store.list_fg_categories(conn)
+        counts = store.get_fg_status_counts(conn)
+    return jsonify({"categories": categories, **counts})
 
 
 @app.route("/api/dates")
