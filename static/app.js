@@ -39,10 +39,10 @@ async function loadFgCategories() {
   try {
     const data = await fetchJSON("/api/fg-categories");
     const opts = ['<option value="">전체</option>'];
-    opts.push(`<option value="__unchecked__">미확인 (${data.unchecked}건)</option>`);
+    opts.push(`<option value="__unchecked__">미확인</option>`);
     data.categories.forEach((c) => {
       opts.push(
-        `<option value="${escapeHtml(c.category)}">${escapeHtml(c.category)} (#${c.category_id}) · ${c.count}건</option>`
+        `<option value="${escapeHtml(c.category)}">${escapeHtml(c.category)} (#${c.category_id})</option>`
       );
     });
     el("filterFgCategory").innerHTML = opts.join("");
