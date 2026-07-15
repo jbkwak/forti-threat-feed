@@ -40,7 +40,6 @@ async function loadFgCategories() {
     const data = await fetchJSON("/api/fg-categories");
     const opts = ['<option value="">전체</option>'];
     opts.push(`<option value="__unchecked__">미확인 (${data.unchecked}건)</option>`);
-    opts.push(`<option value="__not_found__">FortiGuard 미등록 (${data.not_found}건)</option>`);
     data.categories.forEach((c) => {
       opts.push(
         `<option value="${escapeHtml(c.category)}">${escapeHtml(c.category)} (#${c.category_id}) · ${c.count}건</option>`
