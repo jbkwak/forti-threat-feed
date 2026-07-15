@@ -99,7 +99,7 @@ def search_urls(conn, date=None, source=None, q=None, fg_category=None, page=1, 
     """날짜(YYYY-MM-DD, KST 기준)/출처/검색어/FortiGuard 카테고리로 필터링.
 
     fg_category는 실제 카테고리명(예: "Malicious Websites") 외에 특수값을 받는다:
-      "__unchecked__" - 아직 FortiGuard 조회를 안 한 URL (fg_status IS NULL)
+      "__unchecked__" - FortiGuard/VirusTotal 둘 다 아직 조회 안 한 URL
       "__not_found__" - FortiGuard에 등록되지 않은 URL (fg_status = 'not_found')
 
     반환값: (row dict 목록, 전체 건수)
@@ -116,7 +116,7 @@ def search_urls(conn, date=None, source=None, q=None, fg_category=None, page=1, 
         where.append("url LIKE ?")
         params.append(f"%{q}%")
     if fg_category == "__unchecked__":
-        where.append("fg_status IS NULL")
+        where.append("fg_status IS NULL AND vt_status IS NULL")
     elif fg_category == "__not_found__":
         where.append("fg_status = 'not_found'")
     elif fg_category:
